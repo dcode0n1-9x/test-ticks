@@ -8,10 +8,11 @@ import { ConnectionStatus, SocketMetrics, LogEntry, Tick } from "../market-data/
 
 const RECONNECT_DELAYS = [1000, 2000, 5000, 10000];
 
-export function useMarketDataSocket(initialUrl: string = "ws://localhost:3000/ws") {
+export function useMarketDataSocket(initialUrl: string = "ws://65.0.243.105:9010/") {
   const [url, setUrl] = useState<string>(initialUrl);
   const [status, setStatus] = useState<ConnectionStatus>("DISCONNECTED");
   const [autoReconnect, setAutoReconnect] = useState<boolean>(true);
+  const [useProxy, setUseProxy] = useState<boolean>(false);
   const [flushIntervalMs, setFlushIntervalMs] = useState<number>(50);
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [isMockRunning, setIsMockRunning] = useState<boolean>(false);
@@ -20,6 +21,7 @@ export function useMarketDataSocket(initialUrl: string = "ws://localhost:3000/ws
   const tickStoreRef = useRef<TickStore>(new TickStore());
   const gridQueueRef = useRef<GridUpdateQueue>(new GridUpdateQueue(50));
   const socketRef = useRef<WebSocket | null>(null);
+  const eventSourceRef = useRef<EventSource | null>(null);
 
   // Internal flags and metrics counters
   const isManualDisconnectRef = useRef<boolean>(false);
@@ -59,6 +61,13 @@ export function useMarketDataSocket(initialUrl: string = "ws://localhost:3000/ws
     };
     setLogs((prev) => [entry, ...prev.slice(0, 99)]);
   }, []);
+
+  // Auto-enable proxy if on HTTPS and URL starts with ws://
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.location.protocol === "https:" && url.trim().toLowerCase().startsWith("ws://")) {
+      setUseProxy(true);
+    }
+  }, [url]);
 
   // Update Grid update queue flush interval when state changes
   useEffect(() => {
@@ -141,20 +150,12 @@ export function useMarketDataSocket(initialUrl: string = "ws://localhost:3000/ws
     }
   }, [addLog]);
 
-  // Connect function
+  // Connect function supporting direct ws://, direct wss://, and Next.js proxy route
   const connect = useCallback((targetUrl?: string) => {
-    const endpoint = targetUrl || url;
+    const endpoint = (targetUrl || url).trim();
     if (!endpoint) {
       addLog("error", "Cannot connect: WebSocket URL is empty");
       return;
-    }
-
-    // Check for Mixed Content risk (HTTPS page calling ws://)
-    if (typeof window !== "undefined" && window.location.protocol === "https:" && endpoint.startsWith("ws://")) {
-      addLog(
-        "warn",
-        `Mixed Content Blocked: Page loaded over HTTPS (${window.location.host}) cannot connect to unencrypted '${endpoint}'. Endpoint must be 'wss://' on HTTPS sites.`
-      );
     }
 
     // Clear any pending reconnect timers
@@ -163,15 +164,79 @@ export function useMarketDataSocket(initialUrl: string = "ws://localhost:3000/ws
       reconnectTimerRef.current = null;
     }
 
-    // Close existing socket cleanly
+    // Close existing socket or EventSource cleanly
     if (socketRef.current) {
       isManualDisconnectRef.current = true;
       socketRef.current.close();
+      socketRef.current = null;
+    }
+    if (eventSourceRef.current) {
+      isManualDisconnectRef.current = true;
+      eventSourceRef.current.close();
+      eventSourceRef.current = null;
     }
 
     isManualDisconnectRef.current = false;
     setStatus("CONNECTING");
-    addLog("info", `Connecting to WebSocket: ${endpoint}`);
+
+    const isHttpsPage = typeof window !== "undefined" && window.location.protocol === "https:";
+    const isUnencryptedWs = endpoint.toLowerCase().startsWith("ws://");
+    const shouldProxy = useProxy || (isHttpsPage && isUnencryptedWs);
+
+    if (shouldProxy) {
+      addLog("info", `Connecting via Cloud Server Proxy for '${endpoint}' (bypassing mixed content restrictions)...`);
+      try {
+        const proxyApiUrl = `/api/ws-proxy?url=${encodeURIComponent(endpoint)}`;
+        const es = new EventSource(proxyApiUrl);
+        eventSourceRef.current = es;
+
+        es.addEventListener("status", (e: MessageEvent) => {
+          try {
+            const data = JSON.parse(e.data);
+            if (data.status === "CONNECTED") {
+              setStatus("CONNECTED");
+              reconnectAttemptRef.current = 0;
+              addLog("success", `Proxy connected to ${endpoint}`);
+            } else if (data.status === "ERROR") {
+              setStatus("ERROR");
+              addLog("error", `Proxy connection error: ${data.message}`);
+            } else if (data.status === "DISCONNECTED") {
+              setStatus("DISCONNECTED");
+              addLog("warn", `Proxy connection closed`);
+            }
+          } catch {
+            // ignore
+          }
+        });
+
+        es.addEventListener("tick", (e: MessageEvent) => {
+          processMessage(e.data);
+        });
+
+        es.onerror = () => {
+          if (!isManualDisconnectRef.current) {
+            setStatus("ERROR");
+            addLog("error", `Server Proxy stream connection error for ${endpoint}`);
+            es.close();
+            eventSourceRef.current = null;
+
+            if (autoReconnect) {
+              const delay = RECONNECT_DELAYS[Math.min(reconnectAttemptRef.current, RECONNECT_DELAYS.length - 1)];
+              reconnectAttemptRef.current += 1;
+              addLog("info", `Attempting proxy reconnect #${reconnectAttemptRef.current} in ${delay}ms...`);
+              reconnectTimerRef.current = setTimeout(() => connect(endpoint), delay);
+            }
+          }
+        };
+      } catch (err: any) {
+        setStatus("ERROR");
+        addLog("error", `Failed to initiate proxy connection: ${err.message || err}`);
+      }
+      return;
+    }
+
+    // Direct Browser WebSocket Connection (ws:// or wss://)
+    addLog("info", `Connecting directly to WebSocket: ${endpoint}`);
 
     try {
       const ws = new WebSocket(endpoint);
@@ -180,7 +245,7 @@ export function useMarketDataSocket(initialUrl: string = "ws://localhost:3000/ws
       ws.onopen = () => {
         setStatus("CONNECTED");
         reconnectAttemptRef.current = 0;
-        addLog("success", `Connected to ${endpoint}`);
+        addLog("success", `Connected directly to ${endpoint}`);
       };
 
       ws.onmessage = (event: MessageEvent) => {
@@ -188,7 +253,7 @@ export function useMarketDataSocket(initialUrl: string = "ws://localhost:3000/ws
       };
 
       ws.onerror = () => {
-        addLog("error", "WebSocket error occurred (possible Mixed Content ws:// block or unreachable host)");
+        addLog("error", "Direct WebSocket error occurred (check protocol or host reachability)");
         setStatus("ERROR");
       };
 
@@ -217,7 +282,7 @@ export function useMarketDataSocket(initialUrl: string = "ws://localhost:3000/ws
       setStatus("ERROR");
       addLog("error", `Failed to initiate WebSocket connection: ${error.message || error}`);
     }
-  }, [url, autoReconnect, processMessage, addLog]);
+  }, [url, useProxy, autoReconnect, processMessage, addLog]);
 
   // Manual Disconnect
   const disconnect = useCallback(() => {
@@ -229,6 +294,10 @@ export function useMarketDataSocket(initialUrl: string = "ws://localhost:3000/ws
     if (socketRef.current) {
       socketRef.current.close();
       socketRef.current = null;
+    }
+    if (eventSourceRef.current) {
+      eventSourceRef.current.close();
+      eventSourceRef.current = null;
     }
     setStatus("DISCONNECTED");
     addLog("info", "Disconnected by user");
@@ -331,6 +400,7 @@ export function useMarketDataSocket(initialUrl: string = "ws://localhost:3000/ws
       if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
       if (mockIntervalRef.current) clearInterval(mockIntervalRef.current);
       if (socketRef.current) socketRef.current.close();
+      if (eventSourceRef.current) eventSourceRef.current.close();
     };
   }, []);
 
@@ -340,6 +410,8 @@ export function useMarketDataSocket(initialUrl: string = "ws://localhost:3000/ws
     status,
     autoReconnect,
     setAutoReconnect,
+    useProxy,
+    setUseProxy,
     flushIntervalMs,
     setFlushIntervalMs,
     metrics,

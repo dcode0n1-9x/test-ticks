@@ -16,6 +16,8 @@ export function MarketDataTesterPage() {
     status,
     autoReconnect,
     setAutoReconnect,
+    useProxy,
+    setUseProxy,
     flushIntervalMs,
     setFlushIntervalMs,
     metrics,
@@ -27,7 +29,7 @@ export function MarketDataTesterPage() {
     toggleMockGenerator,
     tickStore,
     gridQueue,
-  } = useMarketDataSocket("ws://localhost:3000/ws");
+  } = useMarketDataSocket("ws://65.0.243.105:9010/");
 
   const [search, setSearch] = useState<string>("");
   const [filteredCount, setFilteredCount] = useState<number>(0);
@@ -115,6 +117,8 @@ export function MarketDataTesterPage() {
             status={status}
             autoReconnect={autoReconnect}
             setAutoReconnect={setAutoReconnect}
+            useProxy={useProxy}
+            setUseProxy={setUseProxy}
             flushIntervalMs={flushIntervalMs}
             setFlushIntervalMs={setFlushIntervalMs}
             connect={connect}

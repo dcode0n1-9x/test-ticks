@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { ConnectionStatus } from "../market-data/types";
-import { Play, Square, Wifi, RefreshCw, Zap, Trash2, AlertTriangle, ShieldAlert, ArrowRight } from "lucide-react";
+import { Play, Square, Wifi, RefreshCw, Zap, Trash2, ShieldCheck, Globe } from "lucide-react";
 
 interface WebSocketControlsProps {
   url: string;
@@ -10,6 +10,8 @@ interface WebSocketControlsProps {
   status: ConnectionStatus;
   autoReconnect: boolean;
   setAutoReconnect: (val: boolean) => void;
+  useProxy: boolean;
+  setUseProxy: (val: boolean) => void;
   flushIntervalMs: number;
   setFlushIntervalMs: (val: number) => void;
   connect: (url?: string) => void;
@@ -25,6 +27,8 @@ export const WebSocketControls: React.FC<WebSocketControlsProps> = ({
   status,
   autoReconnect,
   setAutoReconnect,
+  useProxy,
+  setUseProxy,
   flushIntervalMs,
   setFlushIntervalMs,
   connect,
@@ -41,11 +45,12 @@ export const WebSocketControls: React.FC<WebSocketControlsProps> = ({
     }
   }, []);
 
-  const isMixedContentRisk = isHttps && url.trim().toLowerCase().startsWith("ws://");
+  const isWsUrl = url.trim().toLowerCase().startsWith("ws://");
+  const isWssUrl = url.trim().toLowerCase().startsWith("wss://");
 
-  const handleUpgradeToWss = () => {
-    const upgraded = url.replace(/^ws:\/\//i, "wss://");
-    setUrl(upgraded);
+  const setProtocol = (proto: "ws" | "wss") => {
+    const cleanUrl = url.replace(/^(ws|wss):\/\//i, "");
+    setUrl(`${proto}://${cleanUrl}`);
   };
 
   const getStatusBadge = () => {
@@ -107,17 +112,34 @@ export const WebSocketControls: React.FC<WebSocketControlsProps> = ({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-3">
         {/* Endpoint Input & Connection controls */}
         <div className="lg:col-span-8 flex flex-col sm:flex-row items-center gap-2">
-          <div className="relative w-full">
+          <div className="relative w-full flex items-center">
+            {/* Quick Protocol Selector Buttons */}
+            <div className="absolute left-1 z-10 flex items-center gap-0.5 bg-zinc-200 dark:bg-zinc-800 rounded p-0.5 text-[10px] font-mono">
+              <button
+                type="button"
+                onClick={() => setProtocol("ws")}
+                className={`px-1.5 py-0.5 rounded transition-colors ${
+                  isWsUrl ? "bg-indigo-600 text-white font-bold" : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200"
+                }`}
+              >
+                ws://
+              </button>
+              <button
+                type="button"
+                onClick={() => setProtocol("wss")}
+                className={`px-1.5 py-0.5 rounded transition-colors ${
+                  isWssUrl ? "bg-emerald-600 text-white font-bold" : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200"
+                }`}
+              >
+                wss://
+              </button>
+            </div>
             <input
               type="text"
               value={url}
               onChange={(e) => setUrl(e.target.value)}
-              placeholder="wss://your-domain.com/ws or ws://localhost:3000/ws"
-              className={`w-full px-3 py-2 text-sm bg-zinc-50 dark:bg-zinc-950 border rounded-lg focus:outline-none focus:ring-2 font-mono text-zinc-800 dark:text-zinc-200 ${
-                isMixedContentRisk
-                  ? "border-amber-400 dark:border-amber-600 focus:ring-amber-500"
-                  : "border-zinc-300 dark:border-zinc-700 focus:ring-indigo-500"
-              }`}
+              placeholder="ws://65.0.243.105:9010/ or wss://domain.com/ws"
+              className="w-full pl-28 pr-3 py-2 text-sm bg-zinc-50 dark:bg-zinc-950 border border-zinc-300 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono text-zinc-800 dark:text-zinc-200"
               disabled={status === "CONNECTED" || status === "CONNECTING"}
             />
           </div>
@@ -158,42 +180,60 @@ export const WebSocketControls: React.FC<WebSocketControlsProps> = ({
         </div>
       </div>
 
-      {/* Mixed Content HTTPS Warning Banner */}
-      {isMixedContentRisk && (
-        <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg text-xs text-amber-800 dark:text-amber-200 space-y-2">
-          <div className="flex items-start gap-2">
-            <ShieldAlert className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
-            <div>
-              <span className="font-semibold">Browser Mixed Content Security Block: </span>
-              This page is loaded over secure HTTPS (<code className="font-mono bg-amber-200/50 dark:bg-amber-900/50 px-1 rounded">https://test-tic-mu.vercel.app/</code>), so modern browsers block unencrypted <code className="font-mono bg-amber-200/50 dark:bg-amber-900/50 px-1 rounded">ws://</code> socket endpoints like <code className="font-mono font-semibold">{url}</code>.
-            </div>
-          </div>
-          <div className="flex flex-wrap items-center gap-2 pt-1 pl-6">
-            <button
-              onClick={handleUpgradeToWss}
-              className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-white bg-amber-600 hover:bg-amber-700 rounded shadow-sm transition-colors cursor-pointer"
-            >
-              <span>Upgrade to wss://</span>
-              <ArrowRight className="h-3 w-3" />
-            </button>
-            <span className="text-amber-700 dark:text-amber-300 font-medium">
-              Or click "Start Local Mock Stream" above to test live market data without network restrictions!
-            </span>
-          </div>
-        </div>
-      )}
+      {/* Quick Endpoint Presets */}
+      <div className="flex flex-wrap items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
+        <span className="font-semibold text-zinc-700 dark:text-zinc-300 flex items-center gap-1">
+          <Globe className="h-3 w-3 text-indigo-500" /> Presets:
+        </span>
+        <button
+          onClick={() => setUrl("ws://65.0.243.105:9010/")}
+          className="px-2 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 font-mono text-[11px] text-indigo-600 dark:text-indigo-400 transition-colors"
+        >
+          ws://65.0.243.105:9010/
+        </button>
+        <button
+          onClick={() => setUrl("wss://65.0.243.105:9010/")}
+          className="px-2 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 font-mono text-[11px] text-emerald-600 dark:text-emerald-400 transition-colors"
+        >
+          wss://65.0.243.105:9010/
+        </button>
+        <button
+          onClick={() => setUrl("ws://localhost:3000/ws")}
+          className="px-2 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 font-mono text-[11px] text-zinc-700 dark:text-zinc-300 transition-colors"
+        >
+          ws://localhost:3000/ws
+        </button>
+      </div>
 
-      {/* Advanced Socket Settings */}
-      <div className="flex flex-wrap items-center justify-between gap-4 pt-2 text-xs text-zinc-600 dark:text-zinc-400">
-        <label className="inline-flex items-center gap-2 cursor-pointer select-none">
-          <input
-            type="checkbox"
-            checked={autoReconnect}
-            onChange={(e) => setAutoReconnect(e.target.checked)}
-            className="rounded border-zinc-300 dark:border-zinc-700 text-indigo-600 focus:ring-indigo-500"
-          />
-          Auto-reconnect on unexpected drop (exponential backoff 1s–10s)
-        </label>
+      {/* Advanced Socket Settings & Proxy Bypass Mode */}
+      <div className="flex flex-wrap items-center justify-between gap-4 pt-2 text-xs text-zinc-600 dark:text-zinc-400 border-t border-zinc-100 dark:border-zinc-800">
+        <div className="flex flex-wrap items-center gap-4">
+          <label className="inline-flex items-center gap-2 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={autoReconnect}
+              onChange={(e) => setAutoReconnect(e.target.checked)}
+              className="rounded border-zinc-300 dark:border-zinc-700 text-indigo-600 focus:ring-indigo-500"
+            />
+            Auto-reconnect (1s–10s backoff)
+          </label>
+
+          <label
+            className="inline-flex items-center gap-2 cursor-pointer select-none"
+            title="Proxy WebSocket connections through Next.js server route to bypass browser Mixed Content (HTTPS ws://) restrictions on cloud deployments like Vercel."
+          >
+            <input
+              type="checkbox"
+              checked={useProxy}
+              onChange={(e) => setUseProxy(e.target.checked)}
+              className="rounded border-zinc-300 dark:border-zinc-700 text-indigo-600 focus:ring-indigo-500"
+            />
+            <span className="font-semibold text-indigo-600 dark:text-indigo-400 flex items-center gap-1">
+              <ShieldCheck className="h-3.5 w-3.5" />
+              Cloud Server Proxy Mode (bypasses HTTPS mixed content block)
+            </span>
+          </label>
+        </div>
 
         <div className="flex items-center gap-2">
           <span>Batch Flush Interval:</span>
