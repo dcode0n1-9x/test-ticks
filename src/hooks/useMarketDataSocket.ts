@@ -149,6 +149,14 @@ export function useMarketDataSocket(initialUrl: string = "ws://localhost:3000/ws
       return;
     }
 
+    // Check for Mixed Content risk (HTTPS page calling ws://)
+    if (typeof window !== "undefined" && window.location.protocol === "https:" && endpoint.startsWith("ws://")) {
+      addLog(
+        "warn",
+        `Mixed Content Blocked: Page loaded over HTTPS (${window.location.host}) cannot connect to unencrypted '${endpoint}'. Endpoint must be 'wss://' on HTTPS sites.`
+      );
+    }
+
     // Clear any pending reconnect timers
     if (reconnectTimerRef.current) {
       clearTimeout(reconnectTimerRef.current);
@@ -180,7 +188,7 @@ export function useMarketDataSocket(initialUrl: string = "ws://localhost:3000/ws
       };
 
       ws.onerror = () => {
-        addLog("error", "WebSocket error occurred");
+        addLog("error", "WebSocket error occurred (possible Mixed Content ws:// block or unreachable host)");
         setStatus("ERROR");
       };
 
