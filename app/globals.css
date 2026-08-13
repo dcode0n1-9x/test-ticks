@@ -1,26 +1,86 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
+@layer base {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #f8fafc;
+    --foreground: #0f172a;
+  }
+
+  .dark {
+    --background: #09090b;
+    --foreground: #f8fafc;
   }
 }
 
 body {
-  background: var(--background);
+  background-color: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
+  overflow-x: hidden;
+}
+
+/* Custom AG Grid cell change flash styling */
+.ag-theme-quartz-dark .ag-cell-data-changed {
+  background-color: rgba(99, 102, 241, 0.35) !important;
+  transition: background-color 0.4s ease-out;
+}
+
+.ag-theme-quartz .ag-cell-data-changed {
+  background-color: rgba(99, 102, 241, 0.2) !important;
+  transition: background-color 0.4s ease-out;
+}
+
+/* AG Grid Dark Theme Variables Override - High Contrast & Crisp Visibility */
+.ag-theme-quartz-dark {
+  --ag-background-color: #09090b !important;
+  --ag-header-background-color: #141417 !important;
+  --ag-odd-row-background-color: #0f0f13 !important;
+  --ag-foreground-color: #f4f4f5 !important;
+  --ag-secondary-foreground-color: #a1a1aa !important;
+  --ag-border-color: #27272a !important;
+  --ag-secondary-border-color: #27272a !important;
+  --ag-header-foreground-color: #e4e4e7 !important;
+  --ag-row-hover-color: #1f1f24 !important;
+  --ag-pinned-column-background-color: #09090b !important;
+  --ag-sub-menu-background-color: #141417 !important;
+  --ag-control-panel-background-color: #141417 !important;
+  --ag-checkbox-unchecked-color: #71717a !important;
+  --ag-checkbox-checked-color: #6366f1 !important;
+}
+
+/* AG Grid Light Theme Variables Override - Clean Contrast */
+.ag-theme-quartz {
+  --ag-background-color: #ffffff !important;
+  --ag-header-background-color: #f1f5f9 !important;
+  --ag-odd-row-background-color: #f8fafc !important;
+  --ag-foreground-color: #0f172a !important;
+  --ag-secondary-foreground-color: #475569 !important;
+  --ag-border-color: #e2e8f0 !important;
+  --ag-secondary-border-color: #e2e8f0 !important;
+  --ag-header-foreground-color: #0f172a !important;
+  --ag-row-hover-color: #e2e8f0 !important;
+  --ag-pinned-column-background-color: #ffffff !important;
+  --ag-sub-menu-background-color: #ffffff !important;
+  --ag-control-panel-background-color: #ffffff !important;
+  --ag-checkbox-unchecked-color: #94a3b8 !important;
+  --ag-checkbox-checked-color: #4f46e5 !important;
+}
+
+/* Scrollbar polish for mobile & desktop */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(156, 163, 175, 0.4);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(156, 163, 175, 0.7);
 }
