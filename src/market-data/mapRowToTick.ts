@@ -1,23 +1,32 @@
 import { Tick } from "./types";
 
+// Cached high-speed time formatter instance to avoid recurring object creation
+const timeFormatter = new Intl.DateTimeFormat("en-US", {
+  hour12: false,
+  hour: "2-digit",
+  minute: "2-digit",
+  second: "2-digit",
+  fractionalSecondDigits: 3,
+});
+
+export function formatTimestamp(ts: number): string {
+  if (!ts) return "—";
+  try {
+    return timeFormatter.format(ts);
+  } catch {
+    return new Date(ts).toLocaleTimeString();
+  }
+}
+
 /**
  * Normalizes incoming array-based row data into a canonical Tick structure.
  *
- * Array mapping:
- * Index 0: Symbol ("PEPUS")
- * Index 1: Description ("PEPUS.sp")
- * Index 2: LTP ("140.035")
- * Index 3: Bid ("140.02")
- * Index 4: Ask ("140.05")
- * Index 5: Open ("0")
- * Index 6: High ("0")
- * Index 7: Low ("0")
- * Index 8: Previous Close ("0")
- * Index 9: Timestamp ("2026-08-13 T 14:06:13" or timestamp number)
- * Index 10: Extra ("")
+ * Precomputes dailyChange and formattedTime on ingestion to ensure O(1)
+ * zero-overhead cell rendering in AG Grid.
  */
-export function mapRowToTick(row: any): Tick {
+export function mapRowToTick(row: unknown, source?: string): Tick {
   if (!Array.isArray(row)) {
+    const now = Date.now();
     return {
       symbol: "",
       description: "",
@@ -28,8 +37,12 @@ export function mapRowToTick(row: any): Tick {
       high: 0,
       low: 0,
       prevClose: 0,
-      timestamp: Date.now(),
+      timestamp: now,
       extra: "",
+      source: source || "",
+      dailyChange: 0,
+      direction: "neutral",
+      formattedTime: formatTimestamp(now),
     };
   }
 
@@ -39,7 +52,6 @@ export function mapRowToTick(row: any): Tick {
   if (typeof rawTs === "number") {
     ts = rawTs;
   } else if (typeof rawTs === "string" && rawTs.trim().length > 0) {
-    // Handle space inside timestamp string if needed, e.g. "2026-08-13 T 14:06:13" -> "2026-08-13T14:06:13"
     const cleanedTs = rawTs.replace(/\s+/g, "");
     const parsed = Date.parse(cleanedTs);
     if (Number.isFinite(parsed)) {
@@ -52,18 +64,33 @@ export function mapRowToTick(row: any): Tick {
     }
   }
 
+  const finalTs = Number.isFinite(ts) ? ts : Date.now();
+  const ltp = Number(row[2] ?? 0);
+  const prevClose = Number(row[8] ?? 0);
+  const dailyChange = prevClose > 0 ? ((ltp - prevClose) / prevClose) * 100 : 0;
+
+  const rawDesc = row[1];
+  const cleanedDescription =
+    rawDesc === 0 || rawDesc === "0" || rawDesc == null
+      ? ""
+      : String(rawDesc).trim();
+
   return {
     symbol: String(row[0] ?? "").trim(),
-    description: String(row[1] ?? "").trim(),
-    ltp: Number(row[2] ?? 0),
+    description: cleanedDescription,
+    ltp,
     bid: Number(row[3] ?? 0),
     ask: Number(row[4] ?? 0),
     open: Number(row[5] ?? 0),
     high: Number(row[6] ?? 0),
     low: Number(row[7] ?? 0),
-    prevClose: Number(row[8] ?? 0),
-    timestamp: Number.isFinite(ts) ? ts : Date.now(),
+    prevClose,
+    timestamp: finalTs,
     extra: String(row[10] ?? ""),
+    source: source || "",
+    dailyChange,
+    direction: "neutral",
+    formattedTime: formatTimestamp(finalTs),
   };
 }
 
@@ -72,6 +99,9 @@ export function mapRowToTick(row: any): Tick {
  * Returns 0 if prevClose <= 0 to avoid division by zero.
  */
 export function calculateDailyChange(tick: Tick): number {
+  if (typeof tick.dailyChange === "number") {
+    return tick.dailyChange;
+  }
   if (!tick.prevClose || tick.prevClose <= 0) {
     return 0;
   }
@@ -79,11 +109,20 @@ export function calculateDailyChange(tick: Tick): number {
 }
 
 /**
- * Formats price value preserving precise incoming numbers without forced rounding.
+ * Formats price value with tabular precision, ensuring aligned 2-decimal minimum while preserving sub-cent values.
  */
 export function formatPrice(value: number): string {
-  if (!Number.isFinite(value)) {
+  if (!Number.isFinite(value) || value === 0) {
     return "0.00";
   }
-  return value.toString();
+  const str = value.toString();
+  const dotIndex = str.indexOf(".");
+  if (dotIndex === -1) {
+    return value.toFixed(2);
+  }
+  const decimals = str.length - dotIndex - 1;
+  if (decimals === 1) {
+    return value.toFixed(2);
+  }
+  return str;
 }

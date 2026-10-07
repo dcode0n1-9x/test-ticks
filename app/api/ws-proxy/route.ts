@@ -53,8 +53,9 @@ export async function GET(req: NextRequest) {
             // Already closed
           }
         });
-      } catch (err: any) {
-        sendEvent("status", JSON.stringify({ status: "ERROR", message: err.message || "Failed to create proxy socket" }));
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : "Failed to create proxy socket";
+        sendEvent("status", JSON.stringify({ status: "ERROR", message }));
         try {
           controller.close();
         } catch {

@@ -11,39 +11,35 @@ import { Activity, ShieldCheck, Sun, Moon } from "lucide-react";
 
 export function MarketDataTesterPage() {
   const {
-    url,
-    setUrl,
-    status,
-    autoReconnect,
-    setAutoReconnect,
-    useProxy,
-    setUseProxy,
+    sockets,
+    addSocket,
+    removeSocket,
+    updateSocket,
+    connectSocket,
+    disconnectSocket,
+    connectAll,
+    disconnectAll,
+    overallStatus,
     flushIntervalMs,
     setFlushIntervalMs,
     metrics,
     logs,
-    connect,
-    disconnect,
     clearData,
     isMockRunning,
     toggleMockGenerator,
     tickStore,
     gridQueue,
-  } = useMarketDataSocket("ws://65.0.243.105:9010/");
+  } = useMarketDataSocket("ws://trade.indianifty.com:9001?format=compact");
 
   const [search, setSearch] = useState<string>("");
   const [filteredCount, setFilteredCount] = useState<number>(0);
-  const [theme, setTheme] = useState<"dark" | "light">("dark");
-
-  // Load saved theme or default to dark on mount
-  useEffect(() => {
-    const saved = localStorage.getItem("market_tester_theme") as "dark" | "light" | null;
-    if (saved) {
-      setTheme(saved);
-    } else {
-      setTheme("dark");
+  const [theme, setTheme] = useState<"dark" | "light">(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("market_tester_theme") as "dark" | "light" | null;
+      if (saved) return saved;
     }
-  }, []);
+    return "dark";
+  });
 
   // Update HTML root class whenever theme state changes
   useEffect(() => {
@@ -51,9 +47,11 @@ export function MarketDataTesterPage() {
     if (theme === "dark") {
       root.classList.add("dark");
       root.classList.remove("light");
+      root.style.colorScheme = "dark";
     } else {
       root.classList.remove("dark");
       root.classList.add("light");
+      root.style.colorScheme = "light";
     }
     localStorage.setItem("market_tester_theme", theme);
   }, [theme]);
@@ -78,7 +76,7 @@ export function MarketDataTesterPage() {
               </span>
             </div>
             <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 mt-1">
-              High-frequency WebSocket tick receiver with batched AG Grid transactions &amp; single latest symbol state mapping.
+              Multi-WebSocket collective market data streaming tester with batched AG Grid transactions &amp; single latest symbol state mapping.
             </p>
           </div>
 
@@ -104,7 +102,7 @@ export function MarketDataTesterPage() {
 
             <div className="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400 bg-white dark:bg-zinc-900 px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 shadow-sm shrink-0">
               <ShieldCheck className="h-4 w-4 text-emerald-500" />
-              <span>Tester Utility v1.0</span>
+              <span>Tester Utility v2.0 (Multi-WS)</span>
             </div>
           </div>
         </header>
@@ -112,17 +110,17 @@ export function MarketDataTesterPage() {
         {/* 1. WebSocket Connection Controls */}
         <section>
           <WebSocketControls
-            url={url}
-            setUrl={setUrl}
-            status={status}
-            autoReconnect={autoReconnect}
-            setAutoReconnect={setAutoReconnect}
-            useProxy={useProxy}
-            setUseProxy={setUseProxy}
+            sockets={sockets}
+            addSocket={addSocket}
+            removeSocket={removeSocket}
+            updateSocket={updateSocket}
+            connectSocket={connectSocket}
+            disconnectSocket={disconnectSocket}
+            connectAll={connectAll}
+            disconnectAll={disconnectAll}
+            overallStatus={overallStatus}
             flushIntervalMs={flushIntervalMs}
             setFlushIntervalMs={setFlushIntervalMs}
-            connect={connect}
-            disconnect={disconnect}
             clearData={clearData}
             isMockRunning={isMockRunning}
             toggleMockGenerator={toggleMockGenerator}
@@ -131,7 +129,7 @@ export function MarketDataTesterPage() {
 
         {/* 2. Real-time Market Metrics */}
         <section>
-          <MarketDataMetrics metrics={metrics} status={status} />
+          <MarketDataMetrics metrics={metrics} status={overallStatus} />
         </section>
 
         {/* 3. Symbol & Description Search */}

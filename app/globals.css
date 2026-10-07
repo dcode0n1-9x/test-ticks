@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
 
 @layer base {
   :root {
@@ -19,51 +20,341 @@ body {
   overflow-x: hidden;
 }
 
+/* GPU Hardware Acceleration for AG Grid Container */
+.ag-theme-quartz-dark,
+.ag-theme-quartz {
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  backface-visibility: hidden;
+  contain: layout paint;
+}
+
 /* Custom AG Grid cell change flash styling */
 .ag-theme-quartz-dark .ag-cell-data-changed {
-  background-color: rgba(99, 102, 241, 0.35) !important;
-  transition: background-color 0.4s ease-out;
+  background-color: rgba(99, 102, 241, 0.4) !important;
+  transition: background-color 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .ag-theme-quartz .ag-cell-data-changed {
-  background-color: rgba(99, 102, 241, 0.2) !important;
-  transition: background-color 0.4s ease-out;
+  background-color: rgba(99, 102, 241, 0.25) !important;
+  transition: background-color 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* AG Grid Dark Theme Variables Override - High Contrast & Crisp Visibility */
+/* =====================================================================
+   AG Grid Dark Theme — High-Contrast, Crisp Visibility & Typography
+   ===================================================================== */
 .ag-theme-quartz-dark {
   --ag-background-color: #09090b !important;
-  --ag-header-background-color: #141417 !important;
-  --ag-odd-row-background-color: #0f0f13 !important;
+  --ag-header-background-color: #121215 !important;
+  --ag-odd-row-background-color: #0d0d10 !important;
   --ag-foreground-color: #f4f4f5 !important;
+  --ag-data-color: #f4f4f5 !important;
   --ag-secondary-foreground-color: #a1a1aa !important;
   --ag-border-color: #27272a !important;
   --ag-secondary-border-color: #27272a !important;
-  --ag-header-foreground-color: #e4e4e7 !important;
-  --ag-row-hover-color: #1f1f24 !important;
+  --ag-header-foreground-color: #ffffff !important;
+  --ag-row-hover-color: #1a1a20 !important;
   --ag-pinned-column-background-color: #09090b !important;
   --ag-sub-menu-background-color: #141417 !important;
   --ag-control-panel-background-color: #141417 !important;
   --ag-checkbox-unchecked-color: #71717a !important;
   --ag-checkbox-checked-color: #6366f1 !important;
+  color-scheme: dark;
+  color: #f4f4f5;
 }
 
-/* AG Grid Light Theme Variables Override - Clean Contrast */
+.ag-theme-quartz-dark .ag-cell {
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+}
+
+.ag-theme-quartz-dark .ag-header-cell-text {
+  color: #a1a1aa !important;
+  font-weight: 700 !important;
+  font-size: 11px !important;
+  letter-spacing: 0.05em !important;
+  text-transform: uppercase !important;
+}
+
+.ag-theme-quartz-dark .ag-pinned-left-cols-container,
+.ag-theme-quartz-dark .ag-pinned-right-cols-container {
+  background-color: #09090b !important;
+}
+
+.ag-theme-quartz-dark .ag-pinned-left-cols-container .ag-cell-last-left-pinned {
+  border-right: 2px solid #27272a !important;
+}
+
+.ag-theme-quartz-dark .ag-row {
+  background-color: #09090b !important;
+  color: #f4f4f5;
+  border-bottom: 1px solid #1f1f23 !important;
+}
+
+.ag-theme-quartz-dark .ag-row-odd {
+  background-color: #0d0d10 !important;
+}
+
+/* =====================================================================
+   AG Grid Light Theme — Clean Contrast & Sharp Typography
+   ===================================================================== */
 .ag-theme-quartz {
   --ag-background-color: #ffffff !important;
-  --ag-header-background-color: #f1f5f9 !important;
+  --ag-header-background-color: #f8fafc !important;
   --ag-odd-row-background-color: #f8fafc !important;
-  --ag-foreground-color: #0f172a !important;
-  --ag-secondary-foreground-color: #475569 !important;
+  --ag-foreground-color: #09090b !important;
+  --ag-data-color: #09090b !important;
+  --ag-secondary-foreground-color: #64748b !important;
   --ag-border-color: #e2e8f0 !important;
   --ag-secondary-border-color: #e2e8f0 !important;
-  --ag-header-foreground-color: #0f172a !important;
-  --ag-row-hover-color: #e2e8f0 !important;
+  --ag-header-foreground-color: #09090b !important;
+  --ag-row-hover-color: #f1f5f9 !important;
   --ag-pinned-column-background-color: #ffffff !important;
   --ag-sub-menu-background-color: #ffffff !important;
   --ag-control-panel-background-color: #ffffff !important;
   --ag-checkbox-unchecked-color: #94a3b8 !important;
   --ag-checkbox-checked-color: #4f46e5 !important;
+  color-scheme: light;
+  color: #09090b;
+}
+
+.ag-theme-quartz .ag-cell {
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+}
+
+.ag-theme-quartz .ag-header-cell-text {
+  color: #475569 !important;
+  font-weight: 700 !important;
+  font-size: 11px !important;
+  letter-spacing: 0.05em !important;
+  text-transform: uppercase !important;
+}
+
+.ag-theme-quartz .ag-pinned-left-cols-container,
+.ag-theme-quartz .ag-pinned-right-cols-container {
+  background-color: #ffffff !important;
+}
+
+.ag-theme-quartz .ag-pinned-left-cols-container .ag-cell-last-left-pinned {
+  border-right: 2px solid #e2e8f0 !important;
+}
+
+.ag-theme-quartz .ag-row {
+  background-color: #ffffff !important;
+  color: #09090b;
+  border-bottom: 1px solid #f1f5f9 !important;
+}
+
+.ag-theme-quartz .ag-row-odd {
+  background-color: #f8fafc !important;
+}
+
+/* =====================================================================
+   Financial Cell High-Contrast Specific Styling (Both Themes)
+   ===================================================================== */
+
+/* 1. Symbol Column — Crisp, prominent identifier */
+.ag-theme-quartz-dark .cell-symbol {
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+  font-size: 13px !important;
+  letter-spacing: -0.01em !important;
+}
+.ag-theme-quartz .cell-symbol {
+  color: #09090b !important;
+  font-weight: 700 !important;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+  font-size: 13px !important;
+  letter-spacing: -0.01em !important;
+}
+
+/* 2. Description Column */
+.ag-theme-quartz-dark .cell-description {
+  color: #d4d4d8 !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+}
+.ag-theme-quartz .cell-description {
+  color: #3f3f46 !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+}
+.cell-description-empty {
+  color: #71717a !important;
+  opacity: 0.45 !important;
+  font-family: ui-monospace, monospace !important;
+}
+
+/* 3. Bid (Buy) Column — High-visibility Green */
+.ag-theme-quartz-dark .cell-bid {
+  color: #34d399 !important; /* emerald-400 */
+  font-weight: 600 !important;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+  font-variant-numeric: tabular-nums !important;
+  font-size: 13px !important;
+}
+.ag-theme-quartz .cell-bid {
+  color: #059669 !important; /* emerald-600 */
+  font-weight: 600 !important;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+  font-variant-numeric: tabular-nums !important;
+  font-size: 13px !important;
+}
+
+/* 4. Ask (Sell) Column — High-visibility Red */
+.ag-theme-quartz-dark .cell-ask {
+  color: #f87171 !important; /* rose-400 */
+  font-weight: 600 !important;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+  font-variant-numeric: tabular-nums !important;
+  font-size: 13px !important;
+}
+.ag-theme-quartz .cell-ask {
+  color: #e11d48 !important; /* rose-600 */
+  font-weight: 600 !important;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+  font-variant-numeric: tabular-nums !important;
+  font-size: 13px !important;
+}
+
+/* 5. LTP (Last Traded Price) */
+.ag-theme-quartz-dark .cell-ltp-up {
+  color: #34d399 !important;
+  font-weight: 700 !important;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+  font-variant-numeric: tabular-nums !important;
+  font-size: 13px !important;
+}
+.ag-theme-quartz .cell-ltp-up {
+  color: #059669 !important;
+  font-weight: 700 !important;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+  font-variant-numeric: tabular-nums !important;
+  font-size: 13px !important;
+}
+
+.ag-theme-quartz-dark .cell-ltp-down {
+  color: #f87171 !important;
+  font-weight: 700 !important;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+  font-variant-numeric: tabular-nums !important;
+  font-size: 13px !important;
+}
+.ag-theme-quartz .cell-ltp-down {
+  color: #e11d48 !important;
+  font-weight: 700 !important;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+  font-variant-numeric: tabular-nums !important;
+  font-size: 13px !important;
+}
+
+.ag-theme-quartz-dark .cell-ltp-neutral {
+  color: #f4f4f5 !important;
+  font-weight: 600 !important;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+  font-variant-numeric: tabular-nums !important;
+  font-size: 13px !important;
+}
+.ag-theme-quartz .cell-ltp-neutral {
+  color: #09090b !important;
+  font-weight: 600 !important;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+  font-variant-numeric: tabular-nums !important;
+  font-size: 13px !important;
+}
+
+/* 6. Daily Change */
+.ag-theme-quartz-dark .cell-change-up {
+  color: #34d399 !important;
+  font-weight: 600 !important;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+  font-variant-numeric: tabular-nums !important;
+  font-size: 13px !important;
+}
+.ag-theme-quartz .cell-change-up {
+  color: #059669 !important;
+  font-weight: 600 !important;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+  font-variant-numeric: tabular-nums !important;
+  font-size: 13px !important;
+}
+
+.ag-theme-quartz-dark .cell-change-down {
+  color: #f87171 !important;
+  font-weight: 600 !important;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+  font-variant-numeric: tabular-nums !important;
+  font-size: 13px !important;
+}
+.ag-theme-quartz .cell-change-down {
+  color: #e11d48 !important;
+  font-weight: 600 !important;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+  font-variant-numeric: tabular-nums !important;
+  font-size: 13px !important;
+}
+
+.ag-theme-quartz-dark .cell-change-neutral {
+  color: #71717a !important;
+  font-weight: 500 !important;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+  font-variant-numeric: tabular-nums !important;
+  font-size: 13px !important;
+}
+.ag-theme-quartz .cell-change-neutral {
+  color: #71717a !important;
+  font-weight: 500 !important;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+  font-variant-numeric: tabular-nums !important;
+  font-size: 13px !important;
+}
+
+/* 7. Numbers (Open, High, Low, PrevClose) */
+.ag-theme-quartz-dark .cell-num {
+  color: #d4d4d8 !important;
+  font-weight: 500 !important;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+  font-variant-numeric: tabular-nums !important;
+  font-size: 12px !important;
+}
+.ag-theme-quartz .cell-num {
+  color: #3f3f46 !important;
+  font-weight: 500 !important;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+  font-variant-numeric: tabular-nums !important;
+  font-size: 12px !important;
+}
+
+/* 8. Feed Source Badge */
+.ag-theme-quartz-dark .cell-source {
+  color: #818cf8 !important; /* indigo-400 */
+  font-weight: 600 !important;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+  font-size: 11px !important;
+}
+.ag-theme-quartz .cell-source {
+  color: #4f46e5 !important; /* indigo-600 */
+  font-weight: 600 !important;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+  font-size: 11px !important;
+}
+
+/* 9. Timestamp */
+.ag-theme-quartz-dark .cell-timestamp {
+  color: #a1a1aa !important;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+  font-variant-numeric: tabular-nums !important;
+  font-size: 11px !important;
+}
+.ag-theme-quartz .cell-timestamp {
+  color: #71717a !important;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+  font-variant-numeric: tabular-nums !important;
+  font-size: 11px !important;
 }
 
 /* Scrollbar polish for mobile & desktop */

@@ -10,6 +10,10 @@ export interface Tick {
   prevClose: number;
   timestamp: number;
   extra: string;
+  source?: string;
+  dailyChange?: number;
+  direction?: "up" | "down" | "neutral";
+  formattedTime?: string;
 }
 
 export type ConnectionStatus =
@@ -17,6 +21,20 @@ export type ConnectionStatus =
   | "CONNECTING"
   | "CONNECTED"
   | "ERROR";
+
+export interface WebSocketInstance {
+  id: string;
+  name: string;
+  url: string;
+  status: ConnectionStatus;
+  useProxy: boolean;
+  autoReconnect: boolean;
+  errorMessage?: string;
+  messagesReceived: number;
+  ticksReceived: number;
+  messagesPerSec: number;
+  lastMessageAt: number | null;
+}
 
 export interface SocketMetrics {
   messagesReceived: number;
@@ -28,6 +46,8 @@ export interface SocketMetrics {
   uniqueSymbols: number;
   queuePendingAdds: number;
   queuePendingUpdates: number;
+  connectedSockets: number;
+  totalSockets: number;
 }
 
 export interface LogEntry {
@@ -36,3 +56,4 @@ export interface LogEntry {
   type: "info" | "warn" | "error" | "success";
   message: string;
 }
+

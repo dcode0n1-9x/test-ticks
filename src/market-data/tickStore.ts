@@ -12,7 +12,21 @@ export class TickStore {
   }
 
   public set(tick: Tick): boolean {
-    const exists = this.ticksBySymbol.has(tick.symbol);
+    const prev = this.ticksBySymbol.get(tick.symbol);
+    const exists = prev !== undefined;
+
+    if (prev) {
+      if (tick.ltp > prev.ltp) {
+        tick.direction = "up";
+      } else if (tick.ltp < prev.ltp) {
+        tick.direction = "down";
+      } else {
+        tick.direction = prev.direction ?? "neutral";
+      }
+    } else {
+      tick.direction = "neutral";
+    }
+
     this.ticksBySymbol.set(tick.symbol, tick);
     return exists;
   }
